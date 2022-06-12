@@ -243,7 +243,67 @@ for i in range(len(participants_split_df)):
     sentence_split_single_df = pd.DataFrame (sentence_list, columns = ['sentence'])
     sentence_split_single_df['participants'] = participants_split_df['participants'].iloc[i]
     sentence_split_df = sentence_split_df.append(sentence_split_single_df, ignore_index=True)
+# drop if the 'sentence' is empty
+sentence_split_df = sentence_split_df.dropna(inplace=False)
+
 sentence_split_df
 
+#%%
+# count the frequency of participants in the sentence_split_df
+participants_count_df = sentence_split_df.groupby(['participants']).count()
+participants_count_df
+
+# %%
+paragrapg_df = new_df.iloc[:,:2]
+# drop the NaN
+paragrapg_df = paragrapg_df.dropna(inplace=False)
+#rename the second column to 'participants', first column to 'text'
+paragrapg_df.columns = ['text', 'participants']
+# if the text is empty, drop it
+paragrapg_df = paragrapg_df[paragrapg_df['text'] != '']
+# reset the index
+paragrapg_df = paragrapg_df.reset_index(drop=True)
+# if 'text' == 'participants', get the index of the row
+paragrapg_index = paragrapg_df[paragrapg_df['text'] == paragrapg_df['participants']].index.tolist()
+
+# +1 for every value in paragrapg_index
+start_paragrapg_index = []
+for i in range(len(paragrapg_index)):
+    start_paragrapg_index.append(paragrapg_index[i]+1)
+# disregard the last value in the list
+start_paragrapg_index = start_paragrapg_index[:-1]
+print(len(start_paragrapg_index))
+# -1 for every value in paragrapg_index
+end_paragrapg_index = []
+for i in range(len(paragrapg_index)):
+    end_paragrapg_index.append(paragrapg_index[i])
+# disregard the first value in the list
+end_paragrapg_index = end_paragrapg_index[1:]
+print(len(end_paragrapg_index))
+
+# extracct the text of the paragrapg_df between end_paragrapg_index and start_paragrapg_index
+paragraph_split_df = pd.DataFrame()
+for i in range(len(start_paragrapg_index)):
+    paragraph = paragrapg_df.iloc[start_paragrapg_index[i]:end_paragrapg_index[i]]
+    # merge the paragraph to one cell 
+    paragraph_text = paragraph.apply(''.join).to_frame().T
+    # appemd the paragraph_text['text'].iloc[:,0] to the paragraph_split_df
+    paragraph_split_df = paragraph_split_df.append(paragraph_text, ignore_index=True)
+
+# look up for paragrapg_df['participants'] from the start_paragrapg_index
+participants = paragrapg_df.iloc[start_paragrapg_index,1].to_frame()
+# reset the index
+participants = participants.reset_index(drop=True)
+
+paragraph_split_df['participants'] = participants
+paragraph_split_df
+
+
+
+
+# %%
+# paragraph_split_df
+sentence_split_df
+# participants_count_df
 
 # %%
