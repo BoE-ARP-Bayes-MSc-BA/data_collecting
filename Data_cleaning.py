@@ -225,6 +225,7 @@ for i in range(len(list_participants)):
 
 participants_split_df
 
+################################################################################################################################################################
 # %%
 test = participants_split_df.split(".")
 test
@@ -248,10 +249,12 @@ sentence_split_df = sentence_split_df.dropna(inplace=False)
 
 sentence_split_df
 
+################################################################################################################################################################
 #%%
 # count the frequency of participants in the sentence_split_df
 participants_count_df = sentence_split_df.groupby(['participants']).count()
 participants_count_df
+################################################################################################################################################################
 
 # %%
 paragrapg_df = new_df.iloc[:,:2]
@@ -297,13 +300,17 @@ participants = participants.reset_index(drop=True)
 
 paragraph_split_df['participants'] = participants
 paragraph_split_df
-
+################################################################################################################################################################
 
 
 
 # %%
-# paragraph_split_df
-sentence_split_df
-# participants_count_df
+# export the four dataframes to csv
+# incliding paragraph_split_df, participants_split_df, sentence_split_df, and participants_count_df
+final_df_for_NLP_path = '/Users/timliu/Desktop/df_for_NLP'
+participants_split_df.to_csv(f'{final_df_for_NLP_path}/participants_split_df.csv', index=False)
+sentence_split_df.to_csv(f'{final_df_for_NLP_path}/sentence_split_df.csv', index=False)
+participants_count_df.to_csv(f'{final_df_for_NLP_path}/participants_count_df.csv', index=False)
+paragraph_split_df.to_csv(f'{final_df_for_NLP_path}/paragraph_split_df.csv', index=False)
 
 # %%
