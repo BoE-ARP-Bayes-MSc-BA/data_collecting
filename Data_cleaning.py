@@ -226,3 +226,24 @@ for i in range(len(list_participants)):
 participants_split_df
 
 # %%
+test = participants_split_df.split(".")
+test
+# %%
+# write a function to split the text by '.' in participants_split_df
+def split_text(text):
+    text = text.split(".")
+    return text
+# apply the function to the participants_split_df
+participants_split_df['text'] = participants_split_df['text'].apply(lambda x: split_text(x))
+participants_split_df
+
+sentence_split_df = pd.DataFrame()
+for i in range(len(participants_split_df)):
+    sentence_list = participants_split_df['text'].iloc[i]
+    sentence_split_single_df = pd.DataFrame (sentence_list, columns = ['sentence'])
+    sentence_split_single_df['participants'] = participants_split_df['participants'].iloc[i]
+    sentence_split_df = sentence_split_df.append(sentence_split_single_df, ignore_index=True)
+sentence_split_df
+
+
+# %%
