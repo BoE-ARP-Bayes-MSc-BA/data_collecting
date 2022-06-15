@@ -227,12 +227,9 @@ participants_split_df
 
 ################################################################################################################################################################
 # %%
-test = participants_split_df.split(".")
-test
-# %%
 # write a function to split the text by '.' in participants_split_df
 def split_text(text):
-    text = text.split(".")
+    text = text.split(". ")
     return text
 # apply the function to the participants_split_df
 participants_split_df['text'] = participants_split_df['text'].apply(lambda x: split_text(x))
