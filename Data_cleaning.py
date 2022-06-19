@@ -311,3 +311,53 @@ participants_count_df.to_csv(f'{final_df_for_NLP_path}/participants_count_df.csv
 paragraph_split_df.to_csv(f'{final_df_for_NLP_path}/paragraph_split_df.csv', index=False)
 
 # %%
+from nltk import word_tokenize, pos_tag
+# import nltk
+# nltk.download()
+def determine_tense_input(sentence):
+    text = word_tokenize(sentence)
+    tagged = pos_tag(text)
+
+    tense = {}
+    tense["future"] = len([word for word in tagged if word[1] == "MD"])
+    tense["present"] = len([word for word in tagged if word[1] in ["VBP", "VBZ","VBG"]])
+    tense["past"] = len([word for word in tagged if word[1] in ["VBD", "VBN"]]) 
+    return(tense)
+
+# %%
+# apply the function to the sentence_split_df
+sentence_split_df['tense'] = sentence_split_df['sentence'].apply(lambda x: determine_tense_input(x))
+# %%
+# decode the sentence_split_df['tense'] to different column
+sentence_split_df['tense_future'] = sentence_split_df['tense'].apply(lambda x: x['future'])
+sentence_split_df['tense_present'] = sentence_split_df['tense'].apply(lambda x: x['present'])
+sentence_split_df['tense_past'] = sentence_split_df['tense'].apply(lambda x: x['past'])
+
+# %%
+# if the tense_future > tense_present > tense_past, then the tense is future
+# else if the tense_present > tense_future > tense_past, then the tense is present
+# else if the tense_past > tense_future > tense_present, then the tense is past
+sentence_split_df['tense'] = sentence_split_df.apply(lambda x: 'future' if x['tense_future'] > x['tense_present'] > x['tense_past'] else 'present' if x['tense_present'] > x['tense_future'] > x['tense_past'] else 'past', axis=1)
+# else if the tense_past = tense_future = tense_present, then the tense is unknown
+sentence_split_df['tense'] = sentence_split_df.apply(lambda x: 'unknown' if x['tense_past'] == x['tense_future'] == x['tense_present'] else x['tense'], axis=1)
+# disregard the tense_future, tense_present, and tense_past
+sentence_split_df = sentence_split_df.drop(columns=['tense_future', 'tense_present', 'tense_past'])
+
+
+# %%
+# count the amount of rowa of sentence_split_df['tense']=='unknown'
+unknown_sentence_count = sentence_split_df[sentence_split_df['tense'] == 'unknown'].shape[0]
+# count the amount of rowa of sentence_split_df['tense']=='future'
+future_sentence_count = sentence_split_df[sentence_split_df['tense'] == 'future'].shape[0]
+# count the amount of rowa of sentence_split_df['tense']=='present'
+present_sentence_count = sentence_split_df[sentence_split_df['tense'] == 'present'].shape[0]
+# count the amount of rowa of sentence_split_df['tense']=='past'
+past_sentence_count = sentence_split_df[sentence_split_df['tense'] == 'past'].shape[0]
+
+# print the result
+print(f'unknown_sentence_count: {unknown_sentence_count}')
+print(f'future_sentence_count: {future_sentence_count}')
+print(f'present_sentence_count: {present_sentence_count}')
+print(f'past_sentence_count: {past_sentence_count}')
+
+# %%
