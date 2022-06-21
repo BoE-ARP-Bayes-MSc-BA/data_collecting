@@ -192,7 +192,59 @@ for column in df_clean_na.columns:
     new_df[f"participants_{column}"] = df_clean_na[column].apply(lambda x: x if x in all_participants else np.nan)
     # fill the NaN with the value of the previous row
     new_df[f"participants_{column}"] = new_df[f"participants_{column}"].fillna(method='ffill')
-    
+    # # exclude the row if pure_df[column]==pure_df[f"participants_{column}"]
+    # pure_df = pure_df[pure_df[column] != pure_df[f"participants_{column}"]]
+
+
+# %%
+pure_df = pd.DataFrame()
+# identify the len before NaN of each column
+for column in df_clean_na.columns:
+    # exclude the row if pure_df[column]==pure_df[f"participants_{column}"]
+    pure_df = new_df[new_df[column] != new_df[f"participants_{column}"]]
+# drop the column if the column start with participants
+pure_df = pure_df.drop(pure_df.columns[pure_df.columns.str.startswith('participants_')], axis=1).T
+
+# append the text of each roll into one string by using s.str.cat(sep='. ')
+pure_df = pure_df.apply(lambda x: x.str.cat(sep='. '), axis=1)
+# change the pure_df to dataframe
+pure_df = pd.DataFrame(pure_df)
+# rename the column
+pure_df.columns = ['meeting_text']
+# extract the index as column from the text
+pure_df['file_name'] = pure_df.index
+# extract the date from the index column
+pure_df['date'] = pure_df['file_name'].apply(lambda x: x.split('_')[0])
+# change the date column to datetime
+pure_df['date'] = pd.to_datetime(pure_df['date'])
+# reset the index
+pure_df = pure_df.reset_index(drop=True)
+pure_df
+
+#save the dataframe
+pure_df.to_csv(save_path+'/pure_df.csv')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # %%
 # take two of the first column as test df
 single_meeting_df = new_df.iloc[:,:2]
@@ -360,4 +412,3 @@ print(f'future_sentence_count: {future_sentence_count}')
 print(f'present_sentence_count: {present_sentence_count}')
 print(f'past_sentence_count: {past_sentence_count}')
 
-# %%
