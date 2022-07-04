@@ -154,11 +154,9 @@ df_clean_na = df_clean_na.iloc[:,1:]
 df_clean_na.to_csv('/Users/timliu/Documents/GitHub/data_collecting/output/test/df_test.csv')
 
 #%%
-# if error of unhashable type: 'list' pop up, 
-# run it twice but I don't know why, but no more then three times
 # get the value inside the all_participants 
 all_participants = [item for sublist in all_participants for item in sublist]
-all_participants = list(set(all_participants))
+all_participants = [i[0] for i in all_participants]
 print(all_participants)
 # %%
 # exclude the title of the participants, i.e.'Roland Vogel, CFO' to 'Roland Vogel" by using re
@@ -167,8 +165,6 @@ all_participants = [re.sub(r'\,.*', '', participant) for participant in all_part
 all_participants = [re.sub(r'Property & Casualty Reinsurance', '', participant) for participant in all_participants]
 # exclude the '[0682QB-E Ulrich Wallin]'
 all_participants = [re.sub(r'\[0682QB-E Ulrich Wallin\]', '', participant) for participant in all_participants]
-# drop duplicated participants
-all_participants = list(set(all_participants))
 # drop the empty string
 all_participants = [participant for participant in all_participants if participant != '']
 # remove the sapce in the string
@@ -498,7 +494,7 @@ df_sentence = pd.read_csv(path)
 # df_sentence.head()
 
 # drop participant columns as we dont need it
-df_sentence = df_sentence.drop(['participants'], axis=1)
+# df_sentence = df_sentence.drop(['participants'], axis=1)
 
 # check NaN values
 print("==========================================================")
@@ -521,6 +517,4 @@ df_sentence['sentiment_score'] = prediction
 print("==========================================================")
 print(Counter(df_sentence['prediction_label']))
 
-df_final = df_sentence[['sentence', 'prediction_label', 'sentiment_score']]
-df_final
 # %%
