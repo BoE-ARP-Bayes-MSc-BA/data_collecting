@@ -116,8 +116,8 @@ def participants_list(df):
 
 #%%
 # apply the function to processsing all the file
-path = "/Users/timliu/Documents/on the desktop/MSc BA/論文/ARP/European (Re)Insurers/HNR1 GY" #資料夾目錄
-save_path = "/Users/timliu/Desktop/output"
+path = "/Users/timliu/Documents/GitHub/data_collecting/BBG_original_file/European (Re)Insurers/HNR1 GY" #資料夾目錄
+save_path = "/Users/timliu/Documents/GitHub/data_collecting/output/HNR1 GY_text"
 df = pd.DataFrame()
 # create a dataframe with 2500 rows
 df_clean_na = pd.DataFrame(np.zeros((2500,1)), columns=['index'])
@@ -151,7 +151,7 @@ for file in files:
 df_clean_na = df_clean_na.iloc[:,1:]
 
 # save the dataframe
-df_clean_na.to_csv(save_path+'/df.csv')
+df_clean_na.to_csv('/Users/timliu/Documents/GitHub/data_collecting/output/test/df_test.csv')
 
 #%%
 # if error of unhashable type: 'list' pop up, 
@@ -222,26 +222,7 @@ pure_df = pure_df.reset_index(drop=True)
 pure_df
 
 #save the dataframe
-pure_df.to_csv(save_path+'/pure_df.csv')
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+pure_df.to_csv('/Users/timliu/Documents/GitHub/data_collecting/output/test/pure_df.csv')
 
 
 
@@ -356,7 +337,7 @@ paragraph_split_df
 # %%
 # export the four dataframes to csv
 # incliding paragraph_split_df, participants_split_df, sentence_split_df, and participants_count_df
-final_df_for_NLP_path = '/Users/timliu/Desktop/df_for_NLP'
+final_df_for_NLP_path = '/Users/timliu/Documents/GitHub/data_collecting/output/final_df'
 participants_split_df.to_csv(f'{final_df_for_NLP_path}/participants_split_df.csv', index=False)
 sentence_split_df.to_csv(f'{final_df_for_NLP_path}/sentence_split_df.csv', index=False)
 participants_count_df.to_csv(f'{final_df_for_NLP_path}/participants_count_df.csv', index=False)
@@ -379,13 +360,11 @@ def determine_tense_input(sentence):
 # %%
 # apply the function to the sentence_split_df
 sentence_split_df['tense'] = sentence_split_df['sentence'].apply(lambda x: determine_tense_input(x))
-# %%
 # decode the sentence_split_df['tense'] to different column
 sentence_split_df['tense_future'] = sentence_split_df['tense'].apply(lambda x: x['future'])
 sentence_split_df['tense_present'] = sentence_split_df['tense'].apply(lambda x: x['present'])
 sentence_split_df['tense_past'] = sentence_split_df['tense'].apply(lambda x: x['past'])
 
-# %%
 # if the tense_future > tense_present > tense_past, then the tense is future
 # else if the tense_present > tense_future > tense_past, then the tense is present
 # else if the tense_past > tense_future > tense_present, then the tense is past
@@ -412,3 +391,136 @@ print(f'future_sentence_count: {future_sentence_count}')
 print(f'present_sentence_count: {present_sentence_count}')
 print(f'past_sentence_count: {past_sentence_count}')
 
+#%% # snetiment analysis
+import numpy as np
+import pandas as pd
+
+import re
+import string 
+
+from collections import Counter
+
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
+from sklearn.metrics import confusion_matrix,classification_report, accuracy_score
+from sklearn.linear_model import LogisticRegression
+
+import nltk 
+nltk.download('twitter_samples')
+from nltk.corpus import twitter_samples
+from nltk.corpus import stopwords          # module for stop words that come with NLTK
+nltk.download('stopwords')
+from nltk.stem import PorterStemmer        # module for stemming
+from nltk.tokenize import TweetTokenizer   # module for tokenizing strings
+
+# twitter_samples.fileids()
+# documents
+docs_negative = [(t, "neg") for t in twitter_samples.strings("negative_tweets.json")]
+docs_positive = [(t, "pos") for t in twitter_samples.strings("positive_tweets.json")]
+print("==========================================================")
+print(f'There are {len(docs_negative)} negative sentences.')
+print(f'There are {len(docs_positive)} positive sentences.')
+
+# spliting dataset 
+train_set = docs_negative[:3500] + docs_positive[:3500]
+test_set = docs_negative[3500:4250] + docs_positive[3500:4250]
+valid_set = docs_negative[4250:] + docs_positive[4250:]
+
+# clean text
+def process_text(text):
+    stemmer = PorterStemmer()
+    stopwords_english = stopwords.words('english')
+    #text = text.str
+    text = str(text)
+    text = re.sub(r'\$\w*', '', text)
+    text = re.sub(r'^RT[\s]+', '', text)
+    text = re.sub(r'https?:\/\/.*[\r\n]*', '', text)
+    text = re.sub(r'#', '', text)
+    tokenizer = TweetTokenizer(preserve_case=False, strip_handles=True,reduce_len=True)
+    text_tokens = tokenizer.tokenize(text)
+
+    text_clean = []
+    for word in text_tokens:
+        if (word not in stopwords_english and  
+                word not in string.punctuation): 
+            stem_word = stemmer.stem(word)  # stemming word
+            text_clean.append(stem_word)
+            
+    sentence = ' '.join(text_clean)
+    
+    return sentence
+
+# categorical label
+def cat_label(label):
+    if label == 'neg':
+        value = -1
+    elif label == 'pos':
+        value = 1
+    return value 
+
+# split for x and y 
+def xy(dataset):
+    df = pd.DataFrame(dataset, columns = ['text', 'label'])
+    df['text_clean'] = df['text'].apply(lambda r: process_text(r))
+    #df['categorical_label'] = df.label.factorize()[0]
+    df['categorical_label'] = df['label'].apply(lambda r: cat_label(r))
+
+    x = df.text_clean
+    y = df.categorical_label
+
+    return x, y
+
+# dataframe
+x_train, y_train = xy(train_set)
+x_test, y_test = xy(test_set)
+x_valid, y_valid = xy(valid_set)
+
+## using the naive bayes classifier
+model = Pipeline([
+    ('bow',CountVectorizer()),  # strings to token integer counts
+    ('tfidf', TfidfTransformer()),  # integer counts to weighted TF-IDF scores
+    ('classifier', MultinomialNB()),  # train on TF-IDF vectors w/ Naive Bayes classifier
+])
+model.fit(x_train, y_train)
+
+y_pred = model.predict(x_test)
+print("==========================================================")
+print(confusion_matrix(y_pred,y_test))
+print(classification_report(y_pred,y_test))
+print(accuracy_score(y_pred,y_test))
+
+# Apply into earnings call sentence
+# import dataset
+path = '/Users/timliu/Documents/GitHub/data_collecting/df_for_NLP/sentence_split_df.csv'
+df_sentence = pd.read_csv(path)
+# df_sentence.head()
+
+# drop participant columns as we dont need it
+df_sentence = df_sentence.drop(['participants'], axis=1)
+
+# check NaN values
+print("==========================================================")
+print(df_sentence.isnull().sum())
+
+# delete NaN rows
+df_sentence = df_sentence.dropna()  
+
+# clean text for sentiment analysis
+df_sentence['text_clean'] = df_sentence['sentence'].apply(lambda r: process_text(r))
+# df_sentence.head(5)
+
+# making prediction
+prediction = model.predict(df_sentence.text_clean)
+prediction_label = np.array(['positive' if p==1 else 'negative' for p in prediction])
+df_sentence['prediction_label'] = prediction_label
+df_sentence['sentiment_score'] = prediction
+# df_sentence.head()
+
+print("==========================================================")
+print(Counter(df_sentence['prediction_label']))
+
+df_final = df_sentence[['sentence', 'prediction_label', 'sentiment_score']]
+df_final
+# %%
